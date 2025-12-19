@@ -1,0 +1,28 @@
+company_name,financial_year,regime_id,regime_label,regime_prob
+Adani Total Gas Limited,2022-2022,1,Diluted,0.9999999934605448
+Adani Total Gas Limited,2023-2024,0,Minimal,0.9999999999966676
+Adani Total Gas Limited,2024-2025,1,Diluted,0.9999999888438751
+Castrol India Limited,2021-2022,2,Enforcement,0.9999999966005824
+Castrol India Limited,2023-2023,0,Minimal,0.9999992967545793
+Castrol India Limited,2024-2024,1,Diluted,0.9999877509121242
+GAIL (India) Limited,2022-2023,1,Diluted,0.9986500732382858
+GAIL (India) Limited,2023-2024,0,Minimal,0.9999999990765893
+GAIL (India) Limited,2024-2025,1,Diluted,1.0
+GUJARAT GAS LIMITED,2023-2024,0,Minimal,0.999999998274733
+GUJARAT GAS LIMITED,2024-2025,1,Diluted,0.9999999999524736
+Gujarat State Petronet Limited,2022-2023,0,Minimal,0.9999897764761912
+Gujarat State Petronet Limited,2023-2024,1,Diluted,0.9999998314180161
+Gujarat State Petronet Limited,2024-2025,2,Enforcement,0.9999999804138258
+Hindustan Oil Exploration Company Limited,2022-2023,2,Enforcement,0.9999918728072463
+Hindustan Oil Exploration Company Limited,2022-2023,0,Minimal,0.9999999999166729
+Hindustan Oil Exploration Company Limited,2024-2025,1,Diluted,0.9999056858151326
+Oil & Natural Gas Corporation Limited,2021-2022,0,Minimal,0.9999994979326184
+Oil & Natural Gas Corporation Limited,2022-2023,1,Diluted,1.0
+Oil & Natural Gas Corporation Limited,2023-2024,0,Minimal,0.9999999945793832
+Oil India Limited,2022-2023,2,Enforcement,0.9999404634001999
+Oil India Limited,2023-2024,0,Minimal,0.999999999999936
+Oil India Limited,2024-2025,1,Diluted,0.9999999999999929
+Oil India Limited,2024-2025,0,Minimal,0.999999999895536
+Reliance Industries Limited,2022-2023,2,Enforcement,0.9999851516119852
+Reliance Industries Limited,2023-2024,0,Minimal,0.9999999999975273
+Reliance Industries Limited,2024-2025,1,Diluted,0.9999969816083752

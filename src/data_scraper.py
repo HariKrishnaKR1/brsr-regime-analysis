@@ -1,161 +1,156 @@
 """
 BRSR Data Scraper Module
 
-This module handles web scraping of BRSR (Business Responsibility and Sustainability Reporting)
-data from the NSE India corporate filings portal.
+Handles web scraping of BRSR data from NSE India portal.
 """
 
 import pandas as pd
-import requests
 from bs4 import BeautifulSoup
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class BRSRScraper:
-    """
-    Scraper for BRSR data from NSE India portal.
-
-    This class handles the extraction of BRSR PDF links and metadata
-    from the NSE corporate filings portal.
-    """
+    """Scraper for BRSR data from NSE India portal."""
 
     def __init__(self, html_file_path: Optional[str] = None):
-        """
-        Initialize the BRSR scraper.
-
-        Args:
-            html_file_path: Path to local HTML file containing BRSR data.
-                          If None, will attempt web scraping.
-        """
         self.html_file_path = html_file_path
-        self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        })
 
     def scrape_brsr_data(self) -> pd.DataFrame:
-        """
-        Scrape BRSR data from NSE portal or local HTML file.
-
-        Returns:
-            DataFrame containing BRSR metadata with columns:
-            - company_name: Name of the company
-            - fy_from: Financial year from
-            - fy_to: Financial year to
-            - financial_year: Combined financial year string
-            - year_of_declaration: Year of declaration
-            - submission_date: Full submission date
-            - pdf_url: URL to BRSR PDF
-            - xbrl_url: URL to XBRL file
-        """
+        """Scrape BRSR data from NSE portal or local HTML file."""
         if self.html_file_path and Path(self.html_file_path).exists():
             return self._parse_local_html(self.html_file_path)
         else:
-            logger.warning("No local HTML file provided. Web scraping not implemented.")
+            logger.warning("No local HTML file provided")
             return pd.DataFrame()
 
     def _parse_local_html(self, file_path: str) -> pd.DataFrame:
-        """
-        Parse BRSR data from local HTML file.
-
-        Args:
-            file_path: Path to HTML file containing BRSR table data
-
-        Returns:
-            DataFrame with parsed BRSR data
-        """
+        """Parse BRSR data from local HTML file."""
         logger.info(f"Parsing BRSR data from {file_path}")
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            html_content = f.read()
-
-        soup = BeautifulSoup(html_content, 'html.parser')
-        tables = soup.find_all('table')
+            soup = BeautifulSoup(f.read(), 'html.parser')
 
         data = []
 
+        # Find all BRSR tables (they have specific ID pattern)
+        tables = soup.find_all('table', id=lambda x: x and 'CFBussinessSustainabilitiyTable' in x)
+
         for table in tables:
             tbody = table.find('tbody')
-            if tbody:
-                rows = tbody.find_all('tr')
-                for row in rows:
-                    tds = row.find_all('td')
-                    if len(tds) >= 7:
-                        # Extract company name
-                        company_td = row.find('td', headers='companyName')
-                        company = company_td.get_text(strip=True) if company_td else ''
+            if not tbody:
+                continue
 
-                        # Extract financial years
-                        fy_from_td = row.find('td', headers='fyFrom')
-                        fy_to_td = row.find('td', headers='fyTo')
-                        from_year = fy_from_td.get_text(strip=True) if fy_from_td else ''
-                        to_year = fy_to_td.get_text(strip=True) if fy_to_td else ''
+            for row in tbody.find_all('tr'):
+                # Skip rows without proper data cells
+                tds = row.find_all('td')
+                if len(tds) < 7:
+                    continue
 
-                        # Extract submission date
-                        submission_td = row.find('td', headers='submissionDate')
-                        submission_date = submission_td.get_text(strip=True) if submission_td else ''
+                try:
+                    # Extract company name (more robust parsing)
+                    company_cell = row.find('td', headers='companyName')
+                    if not company_cell:
+                        # Fallback to positional extraction
+                        company_cell = tds[0] if len(tds) > 0 else None
 
-                        # Extract year of declaration
-                        year_of_declaration = (submission_date.split('-')[-1]
-                                             if submission_date and '-' in submission_date
-                                             else submission_date)
+                    if not company_cell:
+                        continue
 
-                        # Extract PDF URL
-                        pdf_url = ''
-                        attachment_td = row.find('td', headers='attachmentFile')
-                        if attachment_td:
-                            a_tag = attachment_td.find('a')
-                            if a_tag and 'href' in a_tag.attrs:
-                                pdf_url = a_tag['href']
+                    company_name = company_cell.get_text(strip=True)
+                    if not company_name:
+                        continue
 
-                        # Extract XBRL URL
-                        xbrl_url = ''
-                        xbrl_td = row.find('td', headers='xbrlFile')
-                        if xbrl_td:
-                            a_tag = xbrl_td.find('a')
-                            if a_tag and 'href' in a_tag.attrs:
-                                xbrl_url = a_tag['href']
+                    # Extract financial years
+                    fy_from_cell = row.find('td', headers='fyFrom') or tds[1] if len(tds) > 1 else None
+                    fy_to_cell = row.find('td', headers='fyTo') or tds[2] if len(tds) > 2 else None
 
-                        data.append({
-                            'company_name': company,
-                            'fy_from': from_year,
-                            'fy_to': to_year,
-                            'financial_year': f"{from_year}-{to_year}",
-                            'year_of_declaration': year_of_declaration,
-                            'submission_date': submission_date,
-                            'pdf_url': pdf_url,
-                            'xbrl_url': xbrl_url
-                        })
+                    if not all([fy_from_cell, fy_to_cell]):
+                        continue
+
+                    from_year = fy_from_cell.get_text(strip=True)
+                    to_year = fy_to_cell.get_text(strip=True)
+
+                    # Extract submission date
+                    submission_cell = row.find('td', headers='submissionDate') or tds[5] if len(tds) > 5 else None
+                    submission_date = submission_cell.get_text(strip=True) if submission_cell else ''
+
+                    # Extract year for sorting (last part of date)
+                    year_of_declaration = (submission_date.split('-')[-1]
+                                         if '-' in submission_date else submission_date)
+
+                    # Extract URLs with better error handling
+                    pdf_url = xbrl_url = ''
+
+                    # PDF attachment
+                    attachment_cell = row.find('td', headers='attachmentFile') or tds[3] if len(tds) > 3 else None
+                    if attachment_cell and attachment_cell.find('a'):
+                        pdf_url = attachment_cell.find('a').get('href', '')
+
+                    # XBRL file
+                    xbrl_cell = row.find('td', headers='xbrlFile') or tds[4] if len(tds) > 4 else None
+                    if xbrl_cell and xbrl_cell.find('a'):
+                        xbrl_url = xbrl_cell.find('a').get('href', '')
+
+                    # Extract file sizes if available
+                    pdf_size = xbrl_size = ''
+                    if attachment_cell:
+                        size_elem = attachment_cell.find('p', class_='mt-1')
+                        if size_elem:
+                            pdf_size = size_elem.get_text(strip=True).strip('()')
+
+                    if xbrl_cell:
+                        size_elem = xbrl_cell.find('p', class_='mt-1')
+                        if size_elem:
+                            xbrl_size = size_elem.get_text(strip=True).strip('()')
+
+                    data.append({
+                        'company_name': company_name,
+                        'fy_from': from_year,
+                        'fy_to': to_year,
+                        'financial_year': f"{from_year}-{to_year}",
+                        'year_of_declaration': year_of_declaration,
+                        'submission_date': submission_date,
+                        'pdf_url': pdf_url,
+                        'xbrl_url': xbrl_url,
+                        'pdf_size': pdf_size,
+                        'xbrl_size': xbrl_size
+                    })
+
+                except Exception as e:
+                    logger.warning(f"Error parsing row: {e}")
+                    continue
 
         df = pd.DataFrame(data)
 
-        # Remove duplicates and empty entries
-        df = df[df['company_name'].str.len() > 0].drop_duplicates()
+        if not df.empty:
+            # Clean and deduplicate
+            df = df[df['company_name'].str.len() > 0].drop_duplicates()
 
-        logger.info(f"Parsed {len(df)} BRSR records for {df['company_name'].nunique()} companies")
+            # Sort by company and financial year
+            df = df.sort_values(['company_name', 'fy_from'])
+
+            logger.info(f"Parsed {len(df)} BRSR records for {df['company_name'].nunique()} companies")
+        else:
+            logger.warning("No valid BRSR data found in HTML file")
 
         return df
 
     def validate_data(self, df: pd.DataFrame) -> Dict[str, int]:
-        """
-        Validate the scraped BRSR data.
+        """Validate scraped BRSR data."""
+        if df.empty:
+            return {'total_records': 0, 'error': 'Empty dataframe'}
 
-        Args:
-            df: DataFrame with BRSR data
-
-        Returns:
-            Dictionary with validation statistics
-        """
-        stats = {
+        return {
             'total_records': len(df),
             'unique_companies': df['company_name'].nunique(),
             'records_with_pdf': df['pdf_url'].str.len().gt(0).sum(),
             'records_with_xbrl': df['xbrl_url'].str.len().gt(0).sum(),
             'financial_years': df['financial_year'].nunique(),
+            'companies_with_multiple_years': (df.groupby('company_name')['financial_year'].nunique() > 1).sum(),
+            'avg_pdf_size_mb': df['pdf_size'].str.extract(r'(\d+\.?\d*)').astype(float).mean() if 'pdf_size' in df.columns and df['pdf_size'].str.len().gt(0).any() else 0,
+            'date_range': f"{df['year_of_declaration'].min()} - {df['year_of_declaration'].max()}" if 'year_of_declaration' in df.columns else 'Unknown'
         }
-
-        return stats

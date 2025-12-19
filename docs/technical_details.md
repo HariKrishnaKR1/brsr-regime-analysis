@@ -4,15 +4,70 @@
 
 This document provides technical details about the implementation of the BRSR (Business Responsibility and Sustainability Reporting) sustainability regime analysis using Hidden Markov Models (HMMs) and Natural Language Processing (NLP) techniques.
 
+## Data Source and Structure
+
+### NSE India BRSR Archive
+
+The analysis uses BRSR submissions from the National Stock Exchange (NSE) India corporate filings archive. Data is collected from the "Business Sustainability Report" section of NSE's corporate information portal.
+
+### Raw Data Format
+
+The source data consists of HTML table structures containing:
+
+- **Company Name**: Full corporate entity names (e.g., "Oil India Limited", "Reliance Industries Limited")
+- **Financial Year Range**: From year and To year (e.g., "2024" to "2025")
+- **PDF Attachments**: Direct links to BRSR report PDFs hosted on NSE servers
+- **XBRL Files**: Structured XML data files for machine-readable reporting
+- **Submission Dates**: Original filing dates and revision timestamps
+
+### Sample Data Structure
+
+```html
+<table>
+<thead>
+<tr>
+<th>COMPANY</th><th>FROM YEAR</th><th>TO YEAR</th>
+<th>ATTACHMENT</th><th>**XBRL</th>
+<th>ORIGINAL SUBMISSION DATE</th><th>LATEST REVISION DATE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Oil India Limited</td><td>2024</td><td>2025</td>
+<td><a href="https://nsearchives.nseindia.com/corporate/OIL_26082025173409_BRSRFY20242526082025.pdf">PDF Link</a></td>
+<td><a href="https://nsearchives.nseindia.com/corporate/xbrl/BRSR_1517800_26082025053527_WEB.xml">XBRL Link</a></td>
+<td>26-Aug-2025</td><td>-</td>
+</tr>
+</tbody>
+</table>
+```
+
+### Dataset Characteristics
+
+- **Companies**: Energy sector firms (Oil India, ONGC, Reliance Industries, GAIL, Gujarat Gas, etc.)
+- **Time Period**: Multi-year coverage (2021-2025 financial years)
+- **Document Types**: PDF reports ranging from 500KB to 21MB
+- **Filing Frequency**: Annual submissions with occasional revisions
+- **Sector Focus**: Natural gas, petroleum, and energy infrastructure companies
+
+### Data Processing Pipeline
+
+1. **HTML Parsing**: Extract table rows and column data from NSE web pages
+2. **URL Collection**: Gather PDF download links and metadata
+3. **Parallel Download**: Concurrent PDF retrieval with error handling
+4. **Text Extraction**: Convert PDF content to machine-readable text
+5. **Quality Filtering**: Remove corrupted or empty documents
+6. **Temporal Alignment**: Match reports across financial years per company
+
 ## Architecture
 
 ### Core Components
 
-1. **Data Scraper** (`src/data_scraper.py`): Handles web scraping of BRSR PDFs from NSE India
-2. **Feature Extractor** (`src/feature_extractor.py`): NLP-based feature engineering from PDF text
-3. **HMM Model** (`src/hmm_model.py`): Probabilistic regime inference using HMMs
-4. **Visualization** (`src/visualization.py`): Analysis and plotting utilities
-5. **Utilities** (`src/utils.py`): Helper functions for data processing and analysis
+1. Data Scraper (`src/data_scraper.py`): Handles web scraping of BRSR PDFs from NSE India
+2. Feature Extractor (`src/feature_extractor.py`): NLP-based feature engineering from PDF text
+3. HMM Model (`src/hmm_model.py`): Probabilistic regime inference using HMMs
+4. Visualization (`src/visualization.py`): Analysis and plotting utilities
+5. Utilities (`src/utils.py`): Helper functions for data processing and analysis
 
 ### Data Flow
 
@@ -30,116 +85,116 @@ Normalized Features → HMM Model → Regime Predictions → Visualization → R
 
 The analysis extracts six theoretically motivated features from BRSR text:
 
-1. **Commitment Language** (C)
+1. Commitment Language (C)
    - Keywords: target, commit, pledge, goal, objective, aspiration
    - Captures: Declarative sustainability ambition
 
-2. **Metric Intensity** (M)
+2. Metric Intensity (M)
    - Keywords: percentages, tonnes, MWh, kWh, kg, YoY, growth, reduction
    - Captures: Quantitative disclosure rigor
 
-3. **Governance Language** (G)
+3. Governance Language (G)
    - Keywords: board, committee, oversight, accountability, governance
    - Captures: Institutional integration signals
 
-4. **Capital Allocation** (K)
+4. Capital Allocation (K)
    - Keywords: invest, capex, allocation, funding, budget, capital
    - Captures: Resource commitment to sustainability
 
-5. **Enforcement Language** (E)
+5. Enforcement Language (E)
    - Keywords: audit, monitor, verify, penalty, control, standard, assurance
    - Captures: External accountability mechanisms
 
-6. **Supply Chain Responsibility** (S)
+6. Supply Chain Responsibility (S)
    - Keywords: supplier, value chain, scope, due diligence, vendor
    - Captures: Extended enterprise responsibility
 
 ### Normalization Process
 
-1. **Raw Counts**: Term frequency per document
-2. **Length Normalization**: Divide by total word count
-3. **Within-Firm Z-Score**: Standardize across company's time series
-4. **Global Standardization**: Final normalization across all firms
+1. Raw Counts: Term frequency per document
+2. Length Normalization: Divide by total word count
+3. Within-Firm Z-Score: Standardize across company's time series
+4. Global Standardization: Final normalization across all firms
 
 ## Hidden Markov Model Implementation
 
 ### Model Specification
 
-- **States**: 3 latent sustainability regimes
-- **Emissions**: Multivariate Gaussian distributions
-- **Covariance**: Diagonal (feature independence assumption)
-- **Transitions**: Full matrix (no regime transition restrictions)
+- States: 3 latent sustainability regimes
+- Emissions: Multivariate Gaussian distributions
+- Covariance: Diagonal (feature independence assumption)
+- Transitions: Full matrix (no regime transition restrictions)
 
 ### Regime Interpretation
 
-1. **Minimal Compliance** (State 0)
+1. Minimal Compliance (State 0)
    - Low feature values across all dimensions
    - Checklist-driven reporting
 
-2. **Lobbyist-Influenced Dilution** (State 1)
+2. Lobbyist-Influenced Dilution (State 1)
    - Moderate procedural language
    - Potential regulatory resistance signals
 
-3. **Enforcement-Oriented** (State 2)
+3. Enforcement-Oriented (State 2)
    - High commitment, metrics, and governance
    - Genuine operational integration
 
 ### Training Algorithm
 
-1. **Expectation-Maximization (EM)**: Baum-Welch algorithm
-2. **Initialization**: K-means clustering for starting parameters
-3. **Convergence**: Log-likelihood improvement < 1e-3 or max 500 iterations
-4. **Random Restarts**: Multiple initializations to avoid local optima
+1. Expectation-Maximization (EM): Baum-Welch algorithm
+2. Initialization: K-means clustering for starting parameters
+3. Convergence: Log-likelihood improvement < 1e-3 or max 500 iterations
+4. Random Restarts: Multiple initializations to avoid local optima
 
 ### Fallback Methods
 
 When temporal data is insufficient:
-- **K-means Clustering**: Cross-sectional regime assignment
-- **Fallback Assignment**: Default to minimal compliance regime
+- K-means Clustering: Cross-sectional regime assignment
+- Fallback Assignment: Default to minimal compliance regime
 
 ## Evaluation Framework
 
 ### Model Fit Metrics
 
-- **Log-Likelihood**: Higher values indicate better fit
-- **Akaike Information Criterion (AIC)**: Penalizes model complexity
-- **Bayesian Information Criterion (BIC)**: Stronger complexity penalty
+- Log-Likelihood: Higher values indicate better fit
+- Akaike Information Criterion (AIC): Penalizes model complexity
+- Bayesian Information Criterion (BIC): Stronger complexity penalty
 
 ### Feature Importance
 
-- **Ablation Analysis**: Remove each feature, measure log-likelihood drop
-- **Percentage Importance**: Normalized impact on model performance
+- Ablation Analysis: Remove each feature, measure log-likelihood drop
+- Percentage Importance: Normalized impact on model performance
 
 ### Validation Approaches
 
-1. **Simulated Ground Truth**: Generate synthetic data with known regimes
-2. **Viterbi Accuracy**: Compare predicted vs. true state sequences
-3. **Cross-Validation**: Temporal holdout validation
+1. Simulated Ground Truth: Generate synthetic data with known regimes
+2. Viterbi Accuracy: Compare predicted vs. true state sequences
+3. Cross-Validation: Temporal holdout validation
 
 ## Technical Specifications
 
 ### Dependencies
 
-- **Python**: 3.8+
-- **HMM Library**: hmmlearn 0.2.7
-- **PDF Processing**: PyMuPDF (fitz) 1.19.0
-- **Web Scraping**: Selenium 4.1.0, BeautifulSoup4 4.9.0
-- **NLP**: NLTK 3.6.0
-- **Data Science**: NumPy 1.21.0, Pandas 1.3.0, Scikit-learn 1.0.0
+- Python: 3.8+
+- HMM Library: hmmlearn 0.2.7
+- PDF Processing: PyMuPDF (fitz) 1.19.0
+- Web Scraping: Selenium 4.1.0, BeautifulSoup4 4.9.0
+- NLP: NLTK 3.6.0
+- Data Science: NumPy 1.21.0, Pandas 1.3.0, Scikit-learn 1.0.0
 
 ### Performance Considerations
 
-- **Memory Usage**: PDF text extraction loads entire documents
-- **Parallel Processing**: ThreadPoolExecutor for concurrent PDF downloads
-- **Batch Processing**: Vectorized operations for feature extraction
-- **Caching**: Compiled regex patterns for efficient text matching
+- Memory Usage: PDF text extraction loads entire documents
+- Parallel Processing: ThreadPoolExecutor for concurrent PDF downloads
+- Batch Processing: Vectorized operations for feature extraction
+- Caching: Compiled regex patterns for efficient text matching
 
 ### Error Handling
 
-- **PDF Extraction Failures**: Graceful fallback to empty features
-- **Network Timeouts**: Retry logic with exponential backoff
-- **Model Convergence**: Multiple random initializations
-- **Data Validation**: Comprehensive input checking and logging
+- PDF Extraction Failures: Graceful fallback to empty features
+- Network Timeouts: Retry logic with exponential backoff
+- Model Convergence: Multiple random initializations
+- Data Validation: Comprehensive input checking and logging
 
 ## File Structure Details
 
@@ -207,24 +262,24 @@ regimes = model.predict(df_features)
 
 ### Technical Improvements
 
-- **Deep Learning Features**: BERT embeddings for richer text representations
-- **Semi-Supervised Learning**: Incorporate expert-labeled regimes
-- **Multi-Modal Analysis**: Combine text with quantitative BRSR metrics
-- **Temporal Convolutional Networks**: Alternative to HMM for sequence modeling
+- Deep Learning Features: BERT embeddings for richer text representations
+- Semi-Supervised Learning: Incorporate expert-labeled regimes
+- Multi-Modal Analysis: Combine text with quantitative BRSR metrics
+- Temporal Convolutional Networks: Alternative to HMM for sequence modeling
 
 ### Scalability Enhancements
 
-- **Distributed Processing**: Dask for large-scale PDF processing
-- **Database Integration**: PostgreSQL for structured data storage
-- **API Development**: RESTful service for real-time analysis
-- **Containerization**: Docker deployment for reproducible environments
+- Distributed Processing: Dask for large-scale PDF processing
+- Database Integration: PostgreSQL for structured data storage
+- API Development: RESTful service for real-time analysis
+- Containerization: Docker deployment for reproducible environments
 
 ### Validation Extensions
 
-- **External Validation**: Correlation with ESG ratings and stock performance
-- **Cross-Industry Analysis**: Sector-specific regime characteristics
-- **Longitudinal Tracking**: Multi-year regime trajectory analysis
-- **Regulatory Impact Assessment**: Measure disclosure quality changes
+- External Validation: Correlation with ESG ratings and stock performance
+- Cross-Industry Analysis: Sector-specific regime characteristics
+- Longitudinal Tracking: Multi-year regime trajectory analysis
+- Regulatory Impact Assessment: Measure disclosure quality changes
 
 ## References
 

@@ -1,55 +1,26 @@
-"""
-Visualization Module for Sustainability Regime Analysis
-
-This module provides plotting and visualization utilities for
-sustainability regime analysis results.
-"""
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Tuple
 import logging
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Set up plotting style
 plt.style.use('default')
 sns.set_palette("husl")
 
 
 class SustainabilityVisualizer:
-    """
-    Visualization utilities for sustainability regime analysis.
-
-    Provides methods for plotting regime distributions, temporal trends,
-    feature importance, and model diagnostics.
-    """
+    """Visualization utilities for sustainability regime analysis."""
 
     def __init__(self, figsize: Tuple[int, int] = (12, 8)):
-        """
-        Initialize the visualizer.
-
-        Args:
-            figsize: Default figure size for plots
-        """
         self.figsize = figsize
         self.colors = ['#d62728', '#ff7f0e', '#2ca02c', '#9467bd', '#8c564b']
 
     def plot_regime_distribution(self, df_regimes: pd.DataFrame,
                                save_path: Optional[str] = None) -> plt.Figure:
-        """
-        Plot the distribution of inferred regimes.
-
-        Args:
-            df_regimes: DataFrame with regime predictions
-            save_path: Optional path to save the plot
-
-        Returns:
-            Matplotlib figure object
-        """
+        """Plot regime distribution."""
         fig, ax = plt.subplots(figsize=self.figsize)
 
         regime_counts = df_regimes['regime_label'].value_counts()
@@ -63,7 +34,6 @@ class SustainabilityVisualizer:
         ax.set_xticks(range(len(regime_counts)))
         ax.set_xticklabels(regime_counts.index, rotation=45, ha='right')
 
-        # Add value labels on bars
         for bar, count in zip(bars, regime_counts.values):
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
@@ -73,34 +43,20 @@ class SustainabilityVisualizer:
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved regime distribution plot to {save_path}")
 
         return fig
 
     def plot_regime_temporal_trends(self, df_regimes: pd.DataFrame,
                                    time_col: str = 'financial_year',
                                    save_path: Optional[str] = None) -> plt.Figure:
-        """
-        Plot regime distribution over time.
-
-        Args:
-            df_regimes: DataFrame with regime predictions and time data
-            time_col: Column name for time periods
-            save_path: Optional path to save the plot
-
-        Returns:
-            Matplotlib figure object
-        """
+        """Plot regime distribution over time."""
         if time_col not in df_regimes.columns:
-            logger.warning(f"Time column '{time_col}' not found. Skipping temporal plot.")
             return None
 
         fig, ax = plt.subplots(figsize=self.figsize)
 
-        # Group by time period and regime
         regime_time = df_regimes.groupby([time_col, 'regime_label']).size().unstack(fill_value=0)
 
-        # Sort by time period if possible
         try:
             regime_time = regime_time.sort_index()
         except:
@@ -118,24 +74,13 @@ class SustainabilityVisualizer:
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved temporal trends plot to {save_path}")
 
         return fig
 
     def plot_feature_importance(self, feature_importance: pd.DataFrame,
                               save_path: Optional[str] = None) -> plt.Figure:
-        """
-        Plot feature importance from ablation analysis.
-
-        Args:
-            feature_importance: DataFrame with feature importance scores
-            save_path: Optional path to save the plot
-
-        Returns:
-            Matplotlib figure object
-        """
+        """Plot feature importance."""
         if 'feature' not in feature_importance.columns or 'importance_%' not in feature_importance.columns:
-            logger.error("Feature importance DataFrame must have 'feature' and 'importance_%' columns")
             return None
 
         fig, ax = plt.subplots(figsize=self.figsize)
@@ -149,7 +94,6 @@ class SustainabilityVisualizer:
         ax.set_xlabel('Importance (%)', fontsize=12)
         ax.set_ylabel('Feature', fontsize=12)
 
-        # Add value labels
         for bar, importance in zip(bars, df_sorted['importance_%']):
             width = bar.get_width()
             ax.text(width + 0.1, bar.get_y() + bar.get_height()/2,
@@ -159,24 +103,13 @@ class SustainabilityVisualizer:
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved feature importance plot to {save_path}")
 
         return fig
 
     def plot_emission_distributions(self, model_info: Dict,
                                  save_path: Optional[str] = None) -> plt.Figure:
-        """
-        Plot emission distributions for HMM states.
-
-        Args:
-            model_info: Dictionary with model information from HMM
-            save_path: Optional path to save the plot
-
-        Returns:
-            Matplotlib figure object
-        """
+        """Plot emission distributions for HMM states."""
         if 'means' not in model_info or 'covariances' not in model_info:
-            logger.warning("Model info does not contain emission parameters")
             return None
 
         means = model_info['means']
@@ -197,7 +130,6 @@ class SustainabilityVisualizer:
                 mean = means[state][i]
                 std = np.sqrt(covars[state][i])
 
-                # Plot normal distribution
                 x = np.linspace(mean - 3*std, mean + 3*std, 100)
                 y = np.exp(-0.5 * ((x - mean) / std) ** 2) / (std * np.sqrt(2 * np.pi))
 
@@ -214,24 +146,13 @@ class SustainabilityVisualizer:
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved emission distributions plot to {save_path}")
 
         return fig
 
     def plot_transition_matrix(self, model_info: Dict,
                              save_path: Optional[str] = None) -> plt.Figure:
-        """
-        Plot the HMM transition matrix as a heatmap.
-
-        Args:
-            model_info: Dictionary with model information
-            save_path: Optional path to save the plot
-
-        Returns:
-            Matplotlib figure object
-        """
+        """Plot HMM transition matrix."""
         if 'transition_matrix' not in model_info:
-            logger.warning("Model info does not contain transition matrix")
             return None
 
         transmat = model_info['transition_matrix']
@@ -250,7 +171,6 @@ class SustainabilityVisualizer:
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved transition matrix plot to {save_path}")
 
         return fig
 
@@ -259,20 +179,8 @@ class SustainabilityVisualizer:
                                     feature_importance: Optional[pd.DataFrame] = None,
                                     time_col: str = 'financial_year',
                                     save_path: Optional[str] = None) -> plt.Figure:
-        """
-        Create a comprehensive dashboard with multiple plots.
-
-        Args:
-            df_regimes: DataFrame with regime predictions
-            model_info: Dictionary with model information
-            feature_importance: Optional DataFrame with feature importance
-            time_col: Column name for time periods
-            save_path: Optional path to save the dashboard
-
-        Returns:
-            Matplotlib figure object
-        """
-        n_plots = 2  # Base plots: distribution and temporal
+        """Create comprehensive dashboard."""
+        n_plots = 2
         if feature_importance is not None:
             n_plots += 1
         if 'transition_matrix' in model_info:
@@ -329,6 +237,5 @@ class SustainabilityVisualizer:
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Saved comprehensive dashboard to {save_path}")
 
         return fig
