@@ -39,7 +39,7 @@ brsr-regime-analysis/
 │   ├── visualization.py        # Plotting and analysis utilities
 │   └── utils.py                # Helper functions
 ├── notebooks/
-│   └── Assignment 3.ipynb      # Original comprehensive notebook
+│   └── notebook.ipynb      # Original comprehensive notebook
 ├── data/
 │   ├── raw/                    # Raw PDF downloads
 │   └── processed/              # Processed datasets
