@@ -8,7 +8,7 @@ This project analyses Business Responsibility and Sustainability Reporting (BRSR
 
 BRSR is mandated by SEBI for large listed companies to enhance transparency in sustainability practices. However, there is often a disconnect between the breadth of disclosure and actual operational integration. This study addresses whether we can distinguish genuine commitment from symbolic compliance by analysing temporal disclosure patterns using probabilistic frameworks. 
 
-This analysis is based on an earlier personal project of mine, which can be found [here](BRSR).
+This analysis is based on an earlier personal project of mine, which can be found [here](https://github.com/HariKrishnaKR1/brsr-regime-analysis/blob/master/BRSR.pdf).
 
 ## Key Features
 
